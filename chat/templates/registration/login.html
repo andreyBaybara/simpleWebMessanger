@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Вход в чат</h2>
+{% if next %}
+        <form method="post" action="/login/?next={{ next }}">
+    {% else %}
+        <form action="/login/?next={{ next }}">
+    {% endif %}
+            {% csrf_token %}
+            {{ form }}
+            <input type="submit" id="submit-btn" value="Отправить">
+        </form>
+{% endblock content %}
