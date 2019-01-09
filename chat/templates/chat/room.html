@@ -110,7 +110,7 @@
 <script>
     $(document).ready(function(){
       var user_id = {{ request.user.pk }};
-      chat = createChat(user_id); // TODO fix that global variable must have chat name, this related with context in chatObj
+      var chat = createChat(user_id);
       chat.init();
     });
     function send_ajax_request(request_url, data, success_func) {
@@ -135,11 +135,13 @@
           this.chat_socket = new WebSocket(
                   'ws://' + window.location.host +
                   '/ws/chat/' + user_id + '/');
+          that = this;
           this.add_events();
         },
         add_events: function() {
           this.chat_socket.onmessage = this.onMessage;
           this.chat_socket.onclose = this.onClose;
+
           $('#chat-message-submit').on('click', this.sendMessage);
           $('#chat-message-input').on('keyup', function(e) {
               if (e.keyCode === 13) {  // enter, return
@@ -194,15 +196,15 @@
             var message = data['message'];
             var sender_id = data['user_id'];
             var chat_key = data['chat_key'];
-            if (sender_id == chat.user_id ) { // if sender is current user this is outgoing message
-                var message_item = chat.wrappMessageOutgoing(message);
+            if (sender_id == that.user_id ) { // if sender is current user this is outgoing message
+                var message_item = that.wrappMessageOutgoing(message);
             } else {
-                var message_item = chat.wrappMessageIncoming(message);
+                var message_item = that.wrappMessageIncoming(message);
             }
             var message_box = $('#message_box_' + chat_key);
             var messages = message_box.html() + message_item;
             message_box.html(messages);
-            chat.scrollMessageBoxDown(chat_key);
+            that.scrollMessageBoxDown(chat_key);
         },
         onClose: function(e) {
             console.error('Chat socket closed unexpectedly');
@@ -212,7 +214,7 @@
             var message = message_input.val();
             var active_chat = $('.active_chat').attr('id');
             if(active_chat) {
-                chat.chat_socket.send(JSON.stringify({
+                that.chat_socket.send(JSON.stringify({
                     'message': message,
                     'chat_key': active_chat,
                     'sender_id': this.user_id
@@ -225,10 +227,10 @@
         chooseSidebarItem: function(event) {
             event.preventDefault();
             chat_key = $( this ).attr('id');
-            chat.resetSidebarActive();
-            chat.hideAllMessageBox();
+            that.resetSidebarActive();
+            that.hideAllMessageBox();
             $( this ).addClass('active_chat');
-            chat.showChatMessageBox(chat_key);
+            that.showChatMessageBox(chat_key);
             $('#chat-message-input').focus();
         },
         resetSidebarActive: function() {
@@ -250,25 +252,25 @@
                 'adding_user_phone': "{{ request.user.mobile_phone }}",
             };
             var url = "{% url 'add_friend' %}";
-            send_ajax_request(url, data, chat.addFriendResponse);
+            send_ajax_request(url, data, that.addFriendResponse);
         },
         addFriendResponse: function(data) {
             console.log(data);
             if(data['status'] == 'created') {
                 var inbox_chat_html = $('.inbox_chat').html();
-                var new_friend_html = chat.wrappNewFriend(data);
+                var new_friend_html = that.wrappNewFriend(data);
                 inbox_chat_html += new_friend_html;
                 $('.inbox_chat').html(inbox_chat_html);
-                $('.mesgs').html(chat.wrapMsgBox(data) + $('.mesgs').html());
+                $('.mesgs').html(that.wrapMsgBox(data) + $('.mesgs').html());
                 $('#addFriendModal').modal('hide');
-                chat.updateEvents();
+                that.updateEvents();
             }
             if(data['status'] == 'fail') {
                 $('#addFriendModal').modal('hide');
                 var innerHTML = '';
                 data['messages'].forEach(function(message) {
                    console.log(message);
-                   innerHTML += chat.wrapError(message);
+                   innerHTML += that.wrapError(message);
                 });
                 $('#chatErrors').html(innerHTML);
                 $('#chatErrors').show();
@@ -276,8 +278,8 @@
             }
         },
         updateEvents: function() {
-          $('.client-choose-sidebar-item').on('click', this.chooseSidebarItem);
-          $('#chat-message-submit').on('click', this.sendMessage);
+          $('.client-choose-sidebar-item').on('click', that.chooseSidebarItem);
+          $('#chat-message-submit').on('click', that.sendMessage);
           $('#chat-message-input').on('keyup', function(e) {
               if (e.keyCode === 13) {  // enter, return
                   $('#chat-message-submit').click();

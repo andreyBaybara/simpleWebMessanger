@@ -43,12 +43,11 @@ class AddFriendView(View):
                 'new_friend_data': new_friend_data.export_data(),
                 'messages': []
             })
-        else:
-            chat_key = msgs_store.get_chat_key(new_friend_data.pk, adding_user_data.pk)
-            return JsonResponse({
-                'status': 'fail',
-                'chat_key': chat_key,
-                'new_friend_data': new_friend_data.export_data(),
-                'messages': ['chat already exists']
-            })
+        chat_key = msgs_store.get_chat_key(new_friend_data.pk, adding_user_data.pk)
+        return JsonResponse({
+            'status': 'fail',
+            'chat_key': chat_key,
+            'new_friend_data': new_friend_data.export_data(),
+            'messages': ['chat already exists']
+        })
 
