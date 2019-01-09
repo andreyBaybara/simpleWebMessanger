@@ -34,7 +34,6 @@ The project uses web sockets. Redis is chosen as a repository for messages and s
 * username: antony
   * password: 123456
   * phone: 380955081135
----admin--------------------------------------------
 * add friend by mobile phone and start messaging!!!
    
    
