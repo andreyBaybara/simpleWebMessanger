@@ -13,24 +13,7 @@
       </div>
       <div class="inbox_chat">
           {% for chat, messages in user_chats.items %}
-                <div id="{{ chat }}" username="
-                  {% if messages.0.user1.pk != request.user.pk %}
-                    {{ messages.0.user1.username }}
-                  {% else %}
-                    {{ messages.0.user2.username }} {% endif %}" class="chat_list client-choose-sidebar-item">
-                  <div class="chat_people">
-                    <div class="chat_img"> <img src="{% static 'images/chat_icon.png' %}" alt="user"> </div>
-                    <div class="chat_ib">
-                      <h5>
-                        {% if messages.0.user1.pk != request.user.pk %}
-                          {{ messages.0.user1.username }}
-                        {% else %}
-                          {{ messages.0.user2.username }}
-                        {% endif %}<span class="chat_date">Dec 25</span></h5>
-                      <p><span id="message_to_read_{{ chat }}" class="badge"></span></p>
-                    </div>
-                  </div>
-                </div>
+            {% include "additional/friend_item.html"  with chat=chat messages=messages %}
           {% endfor %}
       </div>
     </div>
@@ -40,19 +23,9 @@
                 {% for message in messages %}
                     {% if message.index > 0 %}
                       {% if message.sender == user_pk %}
-                        <div msg_index="{{ message.index }}" class="outgoing_msg">
-                          <div class="sent_msg">
-                            <p>{{ message.message }}</p>
-                            <span class="time_date"> {{ message.datetime }}</span></div>
-                        </div>
+                        {% include "additional/incoming_message.html"  with message=message %}
                       {% else %}
-                        <div msg_index="{{ message.index }}" class="incoming_msg">
-                          <div class="received_msg">
-                            <div class="received_withd_msg">
-                              <p>{{ message.message }}</p>
-                              <span class="time_date"> {{ message.datetime }}</span></div>
-                          </div>
-                        </div>
+                        {% include "additional/outgoing_message.html"  with message=message %}
                       {% endif %}
                     {% endif %}
                 {% endfor %}
@@ -80,6 +53,12 @@
     </div>
 </div>
 {% endblock content%}
+
+{% block prototyping_parts %}
+  {% include "additional/friend_item.html"  with additional_classes="hidden prototype_friend_item" %}
+  {% include "additional/incoming_message.html"  with additional_classes="hidden prototype_incoming_msg" %}
+  {% include "additional/outgoing_message.html"  with additional_classes="hidden prototype_outgoing_msg" %}
+{% endblock prototyping_parts %}
 
 {% block modal %}
 <div class="modal fade" id="addFriendModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -141,43 +120,32 @@
         add_events: function() {
           this.chat_socket.onmessage = this.onMessage;
           this.chat_socket.onclose = this.onClose;
-
           $('#chat-message-submit').on('click', this.sendMessage);
           $('#chat-message-input').on('keyup', function(e) {
-              if (e.keyCode === 13) {  // enter, return
+              if (e.keyCode === 13) {
                   $('#chat-message-submit').click();
               }
           });
           $('.client-choose-sidebar-item').on('click', this.chooseSidebarItem);
           $('#add_friend').on('click', this.addFriendRequest);
         },
-        wrappMessageOutgoing: function(message) { // TODO change this function without html code
-          return '<div class="outgoing_msg">' +
-                  '<div class="sent_msg">' +
-                    '<p>' + message + '</p>' +
-                    '<span class="time_date">' + new Date().toISOString() + '</span> </div>' +
-                  '</div>';
+        insertMessageItem: function(message, chat_key, message_type) {
+          var message_item_clone = $(".prototype_" + message_type +"_msg").clone(true);
+          message_item_clone.find('p').text(message);
+          message_item_clone.find('.time_date').text(new Date().toISOString());
+          message_item_clone.appendTo('#message_box_' + chat_key);
+          message_item_clone.removeClass("prototype_" + message_type +"_msg");
+          message_item_clone.removeClass('hidden');
         },
-        wrappMessageIncoming: function(message) { // TODO change this function without html code
-            return '<div class="incoming_msg">' +
-                      '<div class="received_msg">' +
-                        '<div class="received_withd_msg">' +
-                          '<p>' + message + '</p>' +
-                          '<span class="time_date">' + new Date().toISOString() + '</span></div>' +
-                      '</div>' +
-                    '</div>';
-        },
-        wrappNewFriend: function(data) { // TODO change this function without html code
-           return '<div id="'+data['chat_key']+'" username="'+data['new_friend_data']['username']+'" class="chat_list client-choose-sidebar-item">' +
-                      '<div class="chat_people">'+
-                        '<div class="chat_img"> <img src="{% static 'images/chat_icon.png'%}" alt=""> </div>' +
-                        '<div class="chat_ib">' +
-                          '<h5>' + data['new_friend_data']['username'] +
-                            '<span class="chat_date">Dec 25</span></h5>' +
-                          '<p>'  +'<span id="message_to_read_' + data['chat_key'] + '" class="badge"></span></p>' +
-                        '</div>' +
-                      '</div>' +
-                    '</div>';
+        insertNewFriend: function(data) {
+          var friend_item_clone = $('.prototype_friend_item').clone(true);
+          friend_item_clone.find('.chat_list').attr('id', data['chat_key']);
+          friend_item_clone.find('.chat_list').attr('username', data['new_friend_data']['username']);
+          friend_item_clone.find('h5').text(data['new_friend_data']['username']);
+          friend_item_clone.find('.badge').attr('id', 'message_to_read_' + data['chat_key']);
+          friend_item_clone.appendTo('.inbox_chat');
+          friend_item_clone.removeClass('prototype_friend_item');
+          friend_item_clone.removeClass('hidden');
         },
         wrapMsgBox: function(data) { // TODO change this function without html code
             return '<div style="display:none!important" id="message_box_' + data['chat_key'] +'" class="msg_history"></div>'
@@ -196,14 +164,11 @@
             var message = data['message'];
             var sender_id = data['user_id'];
             var chat_key = data['chat_key'];
+            var message_type = 'outgoing';
             if (sender_id == that.user_id ) { // if sender is current user this is outgoing message
-                var message_item = that.wrappMessageOutgoing(message);
-            } else {
-                var message_item = that.wrappMessageIncoming(message);
+              message_type = 'incoming';
             }
-            var message_box = $('#message_box_' + chat_key);
-            var messages = message_box.html() + message_item;
-            message_box.html(messages);
+            that.insertMessageItem(message, chat_key, message_type);
             that.scrollMessageBoxDown(chat_key);
         },
         onClose: function(e) {
@@ -258,9 +223,7 @@
             console.log(data);
             if(data['status'] == 'created') {
                 var inbox_chat_html = $('.inbox_chat').html();
-                var new_friend_html = that.wrappNewFriend(data);
-                inbox_chat_html += new_friend_html;
-                $('.inbox_chat').html(inbox_chat_html);
+                that.insertNewFriend(data);
                 $('.mesgs').html(that.wrapMsgBox(data) + $('.mesgs').html());
                 $('#addFriendModal').modal('hide');
                 that.updateEvents();
@@ -278,7 +241,6 @@
             }
         },
         updateEvents: function() {
-          $('.client-choose-sidebar-item').on('click', that.chooseSidebarItem);
           $('#chat-message-submit').on('click', that.sendMessage);
           $('#chat-message-input').on('keyup', function(e) {
               if (e.keyCode === 13) {  // enter, return

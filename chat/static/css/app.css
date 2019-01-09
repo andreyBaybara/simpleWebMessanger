@@ -1,6 +1,9 @@
 body {
     background-color: white;
 }
+.hidden {
+  display:none;
+}
 .client-choose-sidebar-item {
     border: none;
 }

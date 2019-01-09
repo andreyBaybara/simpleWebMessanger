@@ -1,0 +1,21 @@
+{% load staticfiles %}
+<div class="{{ additional_classes }}">
+  <div id="{{ chat }}"  username="
+    {% if messages.0.user1.pk != request.user.pk %}
+      {{ messages.0.user1.username }}
+    {% else %}
+      {{ messages.0.user2.username }} {% endif %}" class="chat_list client-choose-sidebar-item">
+    <div class="chat_people">
+      <div class="chat_img"> <img src="{% static 'images/chat_icon.png' %}" alt="user"> </div>
+      <div class="chat_ib">
+        <h5>
+          {% if messages.0.user1.pk != request.user.pk %}
+            {{ messages.0.user1.username }}
+          {% else %}
+            {{ messages.0.user2.username }}
+          {% endif %}<span class="chat_date">Dec 25</span></h5>
+        <p><span id="message_to_read_{{ chat }}" class="badge"></span></p>
+      </div>
+    </div>
+  </div>
+</div>
